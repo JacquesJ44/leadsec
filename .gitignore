@@ -1,0 +1,30 @@
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.env.local
+.env.*.local
+*.egg-info/
+dist/
+build/
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+.coverage
+htmlcov/
+pdfs/
+# Frontend
+node_modules/
+leadsec-fe-vite/dist/
+leadsec-fe-vite/.env
+leadsec-fe-vite/.env.local
+
+# OS
+.DS_Store
+Thumbs.db

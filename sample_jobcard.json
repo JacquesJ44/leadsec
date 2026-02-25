@@ -1,0 +1,15 @@
+{
+  "job_title": "Plumbing Installation",
+  "job_description": "Installation of new water supply pipes and fixtures in kitchen and bathrooms",
+  "client_name": "John Smith",
+  "client_email": "john.smith@example.com",
+  "client_phone": "(555) 123-4567",
+  "service_location": "123 Main Street, Springfield, IL 62701",
+  "technician_name": "Jane Doe",
+  "service_date": "2024-02-20",
+  "labor_hours": 4.5,
+  "materials_used": "PVC pipes, copper fittings, sealant tape, brass valves",
+  "cost_estimate": 850.00,
+  "notes": "All fixtures installed successfully. Testing completed. Client satisfied with work quality.",
+  "client_signature": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+}

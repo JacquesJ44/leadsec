@@ -26,7 +26,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        'mysql+mysqlconnector://root@localhost:3306/leadsec'
+        'postgresql://postgres:password@localhost:5432/leadsec'
     )
 
 class ProductionConfig(Config):
@@ -37,7 +37,7 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'mysql+mysqlconnector://root:password@localhost:3306/leadsec_test'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:password@localhost:5432/leadsec_test'
 
 config = {
     'development': DevelopmentConfig,

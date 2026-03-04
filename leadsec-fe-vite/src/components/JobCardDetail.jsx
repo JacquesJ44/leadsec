@@ -198,32 +198,33 @@ function JobCardDetail() {
         </div>
         <div className="header-actions">
           {auth.user && (
-            <span style={{ color: 'white', fontSize: '14px', marginRight: '10px' }}>
+            <span style={{ color: '#6b7280', fontSize: '13px' }}>
               Signed in as: <strong>{auth.user.username}</strong>
             </span>
           )}
-          <button className="btn btn-secondary" onClick={() => navigate('/jobcards')}>
-            ← Back to List
-          </button>
-          <button className="btn btn-info" onClick={handleDownloadPDF}>
-            📥 Download PDF
-          </button>
-          <button className="btn btn-success" onClick={handleSendToClient}>
-            ✉️ Send to Client
-          </button>
-          {!editing && (
-            <button className="btn btn-primary" onClick={() => setEditing(true)}>
-              ✏️ Edit
+          <div>
+            <button className="btn btn-secondary" onClick={() => navigate('/jobcards')}>
+              ← Back to List
             </button>
-          )}
-          <button className="btn btn-secondary" onClick={handleLogout}>
-            Sign Out
-          </button>
+            <button className="btn btn-secondary" onClick={handleLogout}>
+              Sign Out
+            </button>
+          </div>
+          <div>
+            <button className="btn btn-info" onClick={handleDownloadPDF}>
+              📥 Download PDF
+            </button>
+            <button className="btn btn-success" onClick={handleSendToClient}>
+              ✉️ Send to Client
+            </button>
+            {!editing && (
+              <button className="btn btn-primary" onClick={() => setEditing(true)}>
+                ✏️ Edit
+              </button>
+            )}
+          </div>
         </div>
       </div>
-
-      {error && <div className="alert alert-error">{error}</div>}
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
       <div className="detail-content">
         {/* Job Information */}
@@ -446,6 +447,9 @@ function JobCardDetail() {
             )}
           </div>
         </section>
+        
+        {error && <div className="alert alert-error">{error}</div>}
+        {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
         {/* Action Buttons */}
         {editing && (

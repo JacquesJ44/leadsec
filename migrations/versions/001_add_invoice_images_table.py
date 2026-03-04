@@ -22,7 +22,7 @@ def upgrade():
         'invoice_images',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('jobcard_id', sa.Integer(), nullable=False),
-        sa.Column('image_data', sa.Text().with_variant(sa.dialects.mysql.LONGTEXT(), 'mysql'), nullable=False),
+        sa.Column('image_data', sa.Text(), nullable=False),
         sa.Column('filename', sa.String(255), nullable=False),
         sa.Column('send_to_client', sa.Boolean(), nullable=False),
         sa.Column('upload_timestamp', sa.DateTime(), nullable=False),
@@ -30,6 +30,8 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'),
     )
     op.create_index(op.f('ix_invoice_images_jobcard_id'), 'invoice_images', ['jobcard_id'], unique=False)
+    # ensure correct owner
+    op.execute("ALTER TABLE invoice_images OWNER TO leadsec_user")
 
 
 def downgrade():

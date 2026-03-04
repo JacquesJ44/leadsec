@@ -218,9 +218,6 @@ function JobCardForm() {
         </div>
       </div>
 
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
-      {errorMessage && <div className="alert alert-error">{errorMessage}</div>}
-
       <form onSubmit={handleSubmit} className="jobcard-form">
         {/* Job Information Section */}
         <fieldset className="form-section">
@@ -376,6 +373,7 @@ function JobCardForm() {
                 onChange={handleInputChange}
                 placeholder="List of materials used"
                 rows="3"
+                required
               />
             </div>
 
@@ -495,6 +493,9 @@ function JobCardForm() {
             <p className="signature-status">✓ Signature captured</p>
           </div>
         )}
+
+        {successMessage && <div className="alert alert-success">{successMessage}</div>}
+        {errorMessage && <div className="alert alert-error">{errorMessage}</div>}
 
         {/* Form Actions */}
         <div className="form-actions">

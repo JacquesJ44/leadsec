@@ -316,4 +316,7 @@ def send_jobcard_to_client(jobcard_id):
 @api_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+
+    print('ENVIRONMENT:', os.getenv('FLASK_ENV'))
+    print('DATABASE_URL:', os.getenv('DATABASE_URL'))
     return jsonify({'status': 'ok'}), 200

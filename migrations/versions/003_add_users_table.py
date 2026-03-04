@@ -7,6 +7,7 @@ Create Date: 2026-02-25 12:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import func
 
 
 # revision identifiers, used by Alembic.
@@ -23,9 +24,11 @@ def upgrade():
         sa.Column('username', sa.String(length=150), nullable=False, unique=True),
         sa.Column('email', sa.String(length=255), nullable=True, unique=True),
         sa.Column('password_hash', sa.String(length=255), nullable=False),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text('1')),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.true()),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=func.now()),
     )
+    # ensure correct owner
+    op.execute("ALTER TABLE users OWNER TO leadsec_user")
 
 
 def downgrade():

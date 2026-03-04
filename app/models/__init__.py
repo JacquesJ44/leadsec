@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Text
-from sqlalchemy.dialects.mysql import LONGTEXT
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -76,7 +75,7 @@ class InvoiceImage(db.Model):
     jobcard_id = db.Column(db.Integer, db.ForeignKey('jobcards.id'), nullable=False)
     
     # Image data stored as base64
-    image_data = db.Column(Text().with_variant(LONGTEXT(), 'mysql'), nullable=False)
+    image_data = db.Column(Text, nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     
     # Flag to indicate if this image should be sent to client

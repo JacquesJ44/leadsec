@@ -17,13 +17,18 @@ depends_on = None
 
 
 def upgrade():
-    # Alter the image_data column to use LONGTEXT
-    # MySQL doesn't support direct Text -> LongText conversion, so we drop and recreate
-    from sqlalchemy import text
-    op.execute(text('ALTER TABLE invoice_images MODIFY COLUMN image_data LONGTEXT'))
+    # Alter the image_data column to ensure it can handle large images
+    op.alter_column('invoice_images', 'image_data',
+                    existing_type=sa.Text(),
+                    type_=sa.Text(),
+                    existing_nullable=False,
+                    nullable=False)
 
 
 def downgrade():
-    # Revert to Text
-    from sqlalchemy import text
-    op.execute(text('ALTER TABLE invoice_images MODIFY COLUMN image_data TEXT'))
+    # Revert image_data column
+    op.alter_column('invoice_images', 'image_data',
+                    existing_type=sa.Text(),
+                    type_=sa.Text(),
+                    existing_nullable=False,
+                    nullable=False)

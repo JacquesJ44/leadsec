@@ -86,7 +86,7 @@ curl http://localhost:5000/api/jobcards/1
 curl http://localhost:5000/api/jobcards/1/pdf --output jobcard_1.pdf
 ```
 
-### Method 2: Database Query (MySQL)
+### Method 2: Database Query (PostgreSQL)
 
 ```sql
 -- View all jobcards
@@ -110,7 +110,7 @@ SELECT
   SUM(cost_estimate) as total_cost,
   COUNT(DISTINCT client_email) as unique_clients
 FROM jobcards
-WHERE service_date >= DATE_SUB(NOW(), INTERVAL 30 DAY);
+WHERE service_date >= NOW() - INTERVAL '30 days';
 ```
 
 ---
@@ -277,13 +277,13 @@ curl "http://localhost:5000/api/jobcards?status=pending" | grep -i created_at
 #### Labor Hours Summary
 ```sql
 SELECT 
-  WEEK(service_date) as week,
+  EXTRACT(WEEK FROM service_date) as week,
   COUNT(*) as jobcards,
   SUM(labor_hours) as total_hours,
   AVG(labor_hours) as avg_hours
 FROM jobcards
-WHERE YEAR(service_date) = YEAR(NOW())
-GROUP BY WEEK(service_date)
+WHERE EXTRACT(YEAR FROM service_date) = EXTRACT(YEAR FROM NOW())
+GROUP BY EXTRACT(WEEK FROM service_date)
 ORDER BY week DESC;
 ```
 
@@ -295,7 +295,7 @@ SELECT
   SUM(cost_estimate) as total_cost,
   AVG(cost_estimate) as avg_cost
 FROM jobcards
-WHERE service_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+WHERE service_date >= NOW() - INTERVAL '7 days'
 GROUP BY DATE(service_date)
 ORDER BY date DESC;
 ```
@@ -308,7 +308,7 @@ SELECT
   SUM(labor_hours) as total_hours,
   AVG(cost_estimate) as avg_cost_per_job
 FROM jobcards
-WHERE service_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+WHERE service_date >= NOW() - INTERVAL '30 days'
 GROUP BY technician_name
 ORDER BY jobcards DESC;
 ```
@@ -332,9 +332,9 @@ ORDER BY labor_hours DESC;
 -- Duplicate clients same day (potential error)
 SELECT client_email, service_date, COUNT(*) as count
 FROM jobcards
-WHERE service_date >= CURDATE()
+WHERE service_date >= CURRENT_DATE
 GROUP BY client_email, service_date
-HAVING count > 1;
+HAVING COUNT(*) > 1;
 ```
 
 ### Task 4: Client Communication
@@ -382,29 +382,29 @@ Leadsec Team
 
 ```bash
 # Daily backup
-mysqldump -u root -p leadsec > backup_$(date +%Y%m%d).sql
+pg_dump -U postgres -d leadsec > backup_$(date +%Y%m%d).sql
 
 # With compression
-mysqldump -u root -p leadsec | gzip > backup_$(date +%Y%m%d).sql.gz
+pg_dump -U postgres -d leadsec | gzip > backup_$(date +%Y%m%d).sql.gz
 ```
 
 ### Restore from Backup
 
 ```bash
-mysql -u root -p leadsec < backup_20240220.sql
+psql -U postgres -d leadsec < backup_20240220.sql
 
 # From compressed backup
-gunzip < backup_20240220.sql.gz | mysql -u root -p leadsec
+gunzip < backup_20240220.sql.gz | psql -U postgres -d leadsec
 ```
 
 ### Export Reports
 
 ```bash
 # Export all jobcards as CSV
-mysql -u root -p leadsec -e "SELECT * FROM jobcards" > jobcards_export.csv
+psql -U postgres -d leadsec -c "SELECT * FROM jobcards" > jobcards_export.csv
 
 # Export with specific date range
-mysql -u root -p leadsec -e "
+psql -U postgres -d leadsec -c "
 SELECT * FROM jobcards 
 WHERE service_date BETWEEN '2024-01-01' AND '2024-02-29'
 " > jobcards_jan_feb_2024.csv

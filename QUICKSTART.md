@@ -7,14 +7,14 @@ Follow these steps to get the system up and running.
 ### Install System Requirements
 - ✅ **Python 3.8+** - Download from python.org
 - ✅ **Node.js 16+** - Download from nodejs.org  
-- ✅ **MySQL 5.7+** - Download from mysql.com or use `brew install mysql` on Mac
+- ✅ **PostgreSQL 12+** - Download from postgresql.org or use `brew install postgresql` on Mac
 
 ### Verify Installations
 ```bash
 python3 --version
 node --version
 npm --version
-mysql --version
+psql --version
 ```
 
 ---
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env with your:
-# - MySQL credentials
+# - PostgreSQL credentials
 # - Email (Gmail SMTP)
 # - Frontend URL
 ```
@@ -123,10 +123,10 @@ Visit: `http://localhost:5173`
 
 ## 📋 Configuration Checklist
 
-### MySQL Setup
-- [ ] MySQL server running
+### PostgreSQL Setup
+- [ ] PostgreSQL server running
 - [ ] Database 'leadsec' created (or `python create_db.py` run)
-- [ ] Root user accessible (or updated in .env with correct credentials)
+- [ ] PostgreSQL user accessible (default: postgres with password 'password')
 
 ### Email Configuration (for sending copies to clients)
 - [ ] Gmail account with 2FA enabled
@@ -138,7 +138,7 @@ Visit: `http://localhost:5173`
 ```bash
 # Backend .env
 FLASK_ENV=development
-DATABASE_URL=mysql+mysqlconnector://root:password@localhost:3306/leadsec
+DATABASE_URL=postgresql://postgres:password@localhost:5432/leadsec
 MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-app-password
 FRONTEND_URL=http://localhost:5173
@@ -181,7 +181,7 @@ curl http://localhost:5000/api/jobcards/1/pdf --output jobcard_1.pdf
 | Problem | Solution |
 |---------|----------|
 | Port 5000 in use | Kill process: `lsof -ti:5000 \| xargs kill -9` |
-| MySQL connection error | Verify credentials in .env, ensure MySQL running |
+| PostgreSQL connection error | Verify credentials in .env, ensure PostgreSQL running |
 | No module named 'flask' | Activate venv: `source venv/bin/activate` |
 | Email not sending | Check MAIL_* settings, verify Gmail App Password |
 

@@ -19,7 +19,7 @@ def parse_db_url(url):
         'password': parsed.password,
         'host': parsed.hostname or 'localhost',
         'port': parsed.port or 3306,
-        'database': parsed.path.lstrip('/') if parsed.path else 'leadsec'
+        'database': parsed.path.lstrip('/') if parsed.path else 'leadsecu_leadsec'
     }
 
 def create_database():
@@ -27,7 +27,7 @@ def create_database():
     
     try:
         # Parse DATABASE_URL from .env
-        db_url = os.getenv('DATABASE_URL', 'mysql+pymysql://root@localhost:3306/leadsec')
+        db_url = os.getenv('DATABASE_URL')
         # Remove driver prefix if present
         if '://' in db_url:
             db_url = db_url.split('://', 1)[1]
@@ -50,8 +50,8 @@ def create_database():
         cursor = connection.cursor()
         
         # Create database if it doesn't exist
-        cursor.execute("CREATE DATABASE IF NOT EXISTS leadsec")
-        print("Database 'leadsec' created or already exists")
+        cursor.execute("CREATE DATABASE IF NOT EXISTS leadsecu_leadsec")
+        print("Database 'leadsecu_leadsec' created or already exists")
         
         cursor.close()
         connection.close()

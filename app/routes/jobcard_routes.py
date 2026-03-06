@@ -9,6 +9,7 @@ import tempfile
 import base64
 from werkzeug.utils import secure_filename
 from flask_login import login_required, current_user
+from pprint import pprint
 
 @api_bp.route('/jobcards', methods=['POST'])
 @login_required
@@ -96,12 +97,16 @@ def get_jobcards():
         per_page = request.args.get('per_page', 10, type=int)
         
         query = JobCard.query
-        
+        results = query.all()
+        for jobcard in results:
+            pprint(jobcard.to_dict())
+
         if status:
             query = query.filter_by(status=status)
         
         # Pagination
         paginated = query.paginate(page=page, per_page=per_page)
+
         
         return jsonify({
             'jobcards': [jc.to_dict() for jc in paginated.items],
@@ -109,6 +114,8 @@ def get_jobcards():
             'pages': paginated.pages,
             'current_page': page
         }), 200
+    
+    
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -316,7 +323,5 @@ def send_jobcard_to_client(jobcard_id):
 @api_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-
-    print('ENVIRONMENT:', os.getenv('FLASK_ENV'))
-    print('DATABASE_URL:', os.getenv('DATABASE_URL'))
+    
     return jsonify({'status': 'ok'}), 200

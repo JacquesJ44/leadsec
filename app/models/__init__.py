@@ -41,6 +41,9 @@ class JobCard(db.Model):
     
     def to_dict(self, include_images=False):
         """Convert model to dictionary"""
+        # Query the actual count of images from the database
+        images_count = db.session.query(db.func.count(InvoiceImage.id)).filter(InvoiceImage.jobcard_id == self.id).scalar()
+        
         data = {
             'id': self.id,
             'job_title': self.job_title,
@@ -59,6 +62,7 @@ class JobCard(db.Model):
             'status': self.status,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
+            'images_count': images_count,  # Accurate count from database
         }
         
         if include_images:
@@ -75,7 +79,9 @@ class InvoiceImage(db.Model):
     jobcard_id = db.Column(db.Integer, db.ForeignKey('jobcards.id'), nullable=False)
     
     # Image data stored as base64
-    image_data = db.Column(Text, nullable=False)
+    # Use LONGTEXT for MySQL to avoid "data too long" errors
+    from sqlalchemy.dialects import mysql
+    image_data = db.Column(db.Text().with_variant(mysql.LONGTEXT, 'mysql'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     
     # Flag to indicate if this image should be sent to client

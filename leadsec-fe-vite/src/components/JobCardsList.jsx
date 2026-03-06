@@ -32,6 +32,7 @@ function JobCardsList() {
       const response = await jobcardAPI.getAllJobcards(params)
       setJobcards(response.data.jobcards)
       setTotalPages(response.data.pages)
+      // console.log('Fetched jobcards:', response.data.jobcards)
     } catch (err) {
       setError(err.response?.data?.error || 'Error fetching jobcards')
     } finally {
@@ -161,7 +162,7 @@ function JobCardsList() {
                     </td>
                     <td>
                       <span className="badge badge-sm">
-                        {jobcard.images?.length || 0} images
+                        {jobcard.images_count || 0} images
                       </span>
                     </td>
                     <td>

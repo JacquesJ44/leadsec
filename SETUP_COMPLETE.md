@@ -220,9 +220,13 @@ Visit: `http://localhost:5173`
 ### Backend `.env.example`
 ```
 FLASK_ENV=development
-DATABASE_URL=mysql+mysqlconnector://root:password@localhost:3306/leadsec
+FLASK_DEBUG=True
+FLASK_PORT=5000
+SECRET_KEY=your-secret-key
+DATABASE_URL=mysql+pymysql://root:password@localhost:3306/leadsec
 MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-app-password
+MAIL_DEFAULT_SENDER=noreply@leadsec.com
 FRONTEND_URL=http://localhost:5173
 ```
 

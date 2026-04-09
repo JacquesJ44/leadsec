@@ -241,7 +241,7 @@ FLASK_ENV=development
 FLASK_DEBUG=True
 SECRET_KEY=your-secret-key
 
-DATABASE_URL=mysql+mysqlconnector://root:password@localhost:3306/leadsec
+DATABASE_URL=mysql+pymysql://root:password@localhost:3306/leadsec
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USE_TLS=True

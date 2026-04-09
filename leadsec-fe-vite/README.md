@@ -28,7 +28,7 @@ npm run build
 - Digital signature capture
 - Responsive design for mobile/tablet use on-site
 - Automatic email sending with PDF to client
-- Draft support using local storage
+- Session persistence via server-side session cookie
 
 ## Environment Variables
 

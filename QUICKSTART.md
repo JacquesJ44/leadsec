@@ -7,14 +7,14 @@ Follow these steps to get the system up and running.
 ### Install System Requirements
 - ✅ **Python 3.8+** - Download from python.org
 - ✅ **Node.js 16+** - Download from nodejs.org  
-- ✅ **PostgreSQL 12+** - Download from postgresql.org or use `brew install postgresql` on Mac
+- ✅ **MySQL 5.7+** - Download from mysql.com or use `brew install mysql` on Mac
 
 ### Verify Installations
 ```bash
 python3 --version
 node --version
 npm --version
-psql --version
+mysql --version
 ```
 
 ---
@@ -41,9 +41,9 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env with your:
-# - PostgreSQL credentials
-# - Email (Gmail SMTP)
-# - Frontend URL
+# - MySQL connection string (DATABASE_URL)
+# - Email (Gmail SMTP or other SMTP provider)
+# - Frontend URL (for CORS)
 ```
 
 ### 5. Create Database
@@ -80,7 +80,6 @@ cd /Users/jacquesdutoit/Developer/leadsec/leadsec-fe-vite
 ### 2. Install Frontend Dependencies
 ```bash
 npm install
-```
 
 ### 3. Create Environment File
 ```bash
@@ -123,22 +122,24 @@ Visit: `http://localhost:5173`
 
 ## 📋 Configuration Checklist
 
-### PostgreSQL Setup
-- [ ] PostgreSQL server running
+### MySQL Setup
+- [ ] MySQL server running
 - [ ] Database 'leadsec' created (or `python create_db.py` run)
-- [ ] PostgreSQL user accessible (default: postgres with password 'password')
+- [ ] MySQL user accessible (default: root with password set in `.env`)
 
 ### Email Configuration (for sending copies to clients)
-- [ ] Gmail account with 2FA enabled
+- [ ] Gmail account with 2FA enabled (if using Gmail)
 - [ ] [App Password](https://myaccount.google.com/apppasswords) generated
-- [ ] MAIL_USERNAME set in .env
-- [ ] MAIL_PASSWORD set in .env
+- [ ] MAIL_USERNAME set in `.env`
+- [ ] MAIL_PASSWORD set in `.env`
 
 ### Environment Variables
 ```bash
 # Backend .env
 FLASK_ENV=development
-DATABASE_URL=postgresql://postgres:password@localhost:5432/leadsec
+FLASK_DEBUG=True
+FLASK_PORT=5000
+DATABASE_URL=mysql+pymysql://root:password@localhost:3306/leadsec
 MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-app-password
 FRONTEND_URL=http://localhost:5173
@@ -181,7 +182,7 @@ curl http://localhost:5000/api/jobcards/1/pdf --output jobcard_1.pdf
 | Problem | Solution |
 |---------|----------|
 | Port 5000 in use | Kill process: `lsof -ti:5000 \| xargs kill -9` |
-| PostgreSQL connection error | Verify credentials in .env, ensure PostgreSQL running |
+| MySQL connection error | Verify credentials in .env, ensure MySQL running |
 | No module named 'flask' | Activate venv: `source venv/bin/activate` |
 | Email not sending | Check MAIL_* settings, verify Gmail App Password |
 
@@ -236,7 +237,6 @@ curl http://localhost:5000/api/jobcards/1/pdf --output jobcard_1.pdf
 
 ## 💡 Tips
 
-- **Offline Draft**: The form data is auto-saved to browser local storage
 - **Mobile Testing**: Use Chrome DevTools device emulation for tablet/mobile testing
 - **PDF Storage**: PDFs are generated server-side and can be stored/archived
 - **Database Backup**: Regular SQL backups recommended

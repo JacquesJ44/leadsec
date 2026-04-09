@@ -7,9 +7,53 @@ from app.utils.pdf_service import generate_jobcard_pdf
 import os
 import tempfile
 import base64
+from io import BytesIO
 from werkzeug.utils import secure_filename
 from flask_login import login_required, current_user
 from pprint import pprint
+from PIL import Image, UnidentifiedImageError
+
+
+MAX_IMAGE_DIMENSION = 1600
+JPEG_QUALITY = 80
+
+
+def optimize_image_for_storage(file_storage):
+    """Resize and recompress uploaded images to reduce DB storage footprint."""
+    file_storage.seek(0)
+    original_bytes = file_storage.read()
+    file_storage.seek(0)
+
+    if not original_bytes:
+        return original_bytes
+
+    try:
+        with Image.open(BytesIO(original_bytes)) as img:
+            source_format = (img.format or '').upper()
+
+            if max(img.size) > MAX_IMAGE_DIMENSION:
+                img.thumbnail((MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION), Image.Resampling.LANCZOS)
+
+            output = BytesIO()
+
+            if source_format in {'JPEG', 'JPG'}:
+                if img.mode not in {'RGB', 'L'}:
+                    img = img.convert('RGB')
+                img.save(output, format='JPEG', quality=JPEG_QUALITY, optimize=True, progressive=True)
+            elif source_format == 'PNG':
+                img.save(output, format='PNG', optimize=True, compress_level=9)
+            elif source_format == 'WEBP':
+                img.save(output, format='WEBP', quality=JPEG_QUALITY, method=6)
+            else:
+                # Preserve image compatibility for uncommon formats.
+                img.save(output, format=img.format or 'PNG', optimize=True)
+
+            optimized_bytes = output.getvalue()
+
+            # Keep the smaller version only.
+            return optimized_bytes if len(optimized_bytes) < len(original_bytes) else original_bytes
+    except (UnidentifiedImageError, OSError, ValueError):
+        return original_bytes
 
 @api_bp.route('/jobcards', methods=['POST'])
 @login_required
@@ -96,7 +140,7 @@ def get_jobcards():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         
-        query = JobCard.query
+        query = JobCard.query.order_by(JobCard.created_at.desc())
         results = query.all()
         for jobcard in results:
             pprint(jobcard.to_dict())
@@ -185,6 +229,8 @@ def upload_invoice_images(jobcard_id):
             return jsonify({'error': 'No files selected'}), 400
         
         uploaded_images = []
+        total_original_size = 0
+        total_stored_size = 0
         
         for file in files:
             if file.filename == '':
@@ -194,9 +240,13 @@ def upload_invoice_images(jobcard_id):
             if not file.content_type.startswith('image/'):
                 return jsonify({'error': f'File {file.filename} is not an image'}), 400
             
-            # Read and encode image as base64
+            # Re-encode image to reduce storage footprint before persisting.
             file.seek(0)
-            image_data = base64.b64encode(file.read()).decode('utf-8')
+            original_bytes = file.read()
+            optimized_bytes = optimize_image_for_storage(file)
+            image_data = base64.b64encode(optimized_bytes).decode('utf-8')
+            total_original_size += len(original_bytes)
+            total_stored_size += len(optimized_bytes)
             
             # Create invoice image record
             invoice_image = InvoiceImage(
@@ -210,9 +260,16 @@ def upload_invoice_images(jobcard_id):
             uploaded_images.append(invoice_image)
         
         db.session.commit()
+
+        reduction_percent = 0
+        if total_original_size > 0:
+            reduction_percent = round((1 - (total_stored_size / total_original_size)) * 100, 2)
         
         return jsonify({
             'message': f'{len(uploaded_images)} image(s) uploaded successfully',
+            'original_bytes': total_original_size,
+            'stored_bytes': total_stored_size,
+            'storage_reduction_percent': reduction_percent,
             'images': [img.to_dict() for img in uploaded_images]
         }), 201
         

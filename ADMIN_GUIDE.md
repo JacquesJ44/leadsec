@@ -86,7 +86,7 @@ curl http://localhost:5000/api/jobcards/1
 curl http://localhost:5000/api/jobcards/1/pdf --output jobcard_1.pdf
 ```
 
-### Method 2: Database Query (PostgreSQL)
+### Method 2: Database Query (MySQL)
 
 ```sql
 -- View all jobcards
@@ -103,14 +103,14 @@ SELECT * FROM jobcards
 WHERE service_date BETWEEN '2024-01-01' AND '2024-02-29'
 ORDER BY service_date DESC;
 
--- Get jobcard statistics
+-- Get jobcard statistics (last 30 days)
 SELECT 
-  COUNT(*) as total_jobcards,
-  SUM(labor_hours) as total_hours,
-  SUM(cost_estimate) as total_cost,
-  COUNT(DISTINCT client_email) as unique_clients
+  COUNT(*) AS total_jobcards,
+  SUM(labor_hours) AS total_hours,
+  SUM(cost_estimate) AS total_cost,
+  COUNT(DISTINCT client_email) AS unique_clients
 FROM jobcards
-WHERE service_date >= NOW() - INTERVAL '30 days';
+WHERE service_date >= NOW() - INTERVAL 30 DAY;
 ```
 
 ---
@@ -381,33 +381,30 @@ Leadsec Team
 ### Backup Database
 
 ```bash
-# Daily backup
-pg_dump -U postgres -d leadsec > backup_$(date +%Y%m%d).sql
+# Daily backup (MySQL)
+mysqldump -u root -p leadsec > backup_$(date +%Y%m%d).sql
 
 # With compression
-pg_dump -U postgres -d leadsec | gzip > backup_$(date +%Y%m%d).sql.gz
+mysqldump -u root -p leadsec | gzip > backup_$(date +%Y%m%d).sql.gz
 ```
 
 ### Restore from Backup
 
 ```bash
-psql -U postgres -d leadsec < backup_20240220.sql
+mysql -u root -p leadsec < backup_20240220.sql
 
 # From compressed backup
-gunzip < backup_20240220.sql.gz | psql -U postgres -d leadsec
+gunzip < backup_20240220.sql.gz | mysql -u root -p leadsec
 ```
 
 ### Export Reports
 
 ```bash
 # Export all jobcards as CSV
-psql -U postgres -d leadsec -c "SELECT * FROM jobcards" > jobcards_export.csv
+mysql -u root -p -e "SELECT * FROM jobcards" leadsec > jobcards_export.csv
 
 # Export with specific date range
-psql -U postgres -d leadsec -c "
-SELECT * FROM jobcards 
-WHERE service_date BETWEEN '2024-01-01' AND '2024-02-29'
-" > jobcards_jan_feb_2024.csv
+mysql -u root -p -e "SELECT * FROM jobcards WHERE service_date BETWEEN '2024-01-01' AND '2024-02-29'" leadsec > jobcards_jan_feb_2024.csv
 ```
 
 ---

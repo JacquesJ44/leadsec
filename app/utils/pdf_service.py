@@ -87,10 +87,7 @@ def generate_jobcard_pdf(job_card, output_path=None):
     client_data = [
         ['Field', 'Details'],
         ['Client Name', job_card.client_name],
-        ['Email', job_card.client_email],
-        ['Phone', job_card.client_phone or 'N/A'],
     ]
-    
     client_table = Table(client_data, colWidths=[1.5*inch, 4.5*inch])
     client_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2e5090')),
@@ -114,7 +111,6 @@ def generate_jobcard_pdf(job_card, output_path=None):
         ['Technician', job_card.technician_name],
         ['Labor Hours', str(job_card.labor_hours) if job_card.labor_hours else 'N/A'],
         ['Materials Used', job_card.materials_used or 'N/A'],
-        ['Cost Estimate', f"${job_card.cost_estimate}" if job_card.cost_estimate else 'N/A'],
     ]
     
     details_table = Table(details_data, colWidths=[1.5*inch, 4.5*inch])
@@ -138,18 +134,13 @@ def generate_jobcard_pdf(job_card, output_path=None):
         story.append(Paragraph(job_card.notes, styles['BodyText']))
         story.append(Spacer(1, 0.3*inch))
     
-    # Invoice Images Section - only those marked for client
-    relevant_images = [img for img in job_card.images if img.send_to_client]
-    if relevant_images:
+    # Invoice Images Section - show all images (no send_to_client)
+    if hasattr(job_card, 'images') and job_card.images:
         story.append(Paragraph("Invoice & Reference Images", heading_style))
-        
-        # Add images in a 2-column layout
-        for i, image_record in enumerate(relevant_images):
+        for i, image_record in enumerate(job_card.images):
             if i > 0 and i % 2 == 0:
                 story.append(PageBreak())
-            
             try:
-                # Decode base64 image
                 image_data = base64.b64decode(image_record.image_data)
                 img = Image(BytesIO(image_data), width=3.5*inch, height=3.5*inch)
                 story.append(img)
@@ -158,25 +149,7 @@ def generate_jobcard_pdf(job_card, output_path=None):
             except Exception as e:
                 story.append(Paragraph(f"Image unavailable: {image_record.filename}", styles['BodyText']))
                 story.append(Spacer(1, 0.2*inch))
-        
         story.append(Spacer(1, 0.3*inch))
-    
-    # Signature Section
-    story.append(Paragraph("Client Signature", heading_style))
-    
-    if job_card.client_signature:
-        try:
-            # Decode base64 signature and add to PDF
-            signature_data = base64.b64decode(job_card.client_signature.split(',')[1])
-            signature_img = Image(BytesIO(signature_data), width=2*inch, height=1*inch)
-            story.append(signature_img)
-        except Exception as e:
-            story.append(Paragraph("Signature image unavailable", styles['BodyText']))
-    else:
-        story.append(Paragraph("No signature on file", styles['BodyText']))
-    
-    story.append(Spacer(1, 0.2*inch))
-    story.append(Paragraph(f"Signed: {job_card.signature_timestamp.strftime('%Y-%m-%d %H:%M:%S') if job_card.signature_timestamp else 'N/A'}", styles['BodyText']))
     
     # Footer
     story.append(Spacer(1, 0.3*inch))

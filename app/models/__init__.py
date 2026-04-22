@@ -12,8 +12,8 @@ class JobCard(db.Model):
     job_title = db.Column(db.String(255), nullable=False)
     job_description = db.Column(db.Text)
     client_name = db.Column(db.String(255), nullable=False)
-    client_email = db.Column(db.String(255), nullable=False)
-    client_phone = db.Column(db.String(20))
+    # client_email removed
+    # client_phone removed
     service_location = db.Column(db.Text, nullable=False)
     
     # Worker/Technician info
@@ -23,11 +23,11 @@ class JobCard(db.Model):
     service_date = db.Column(db.Date, nullable=False)
     labor_hours = db.Column(db.Float)
     materials_used = db.Column(db.Text)
-    cost_estimate = db.Column(db.Numeric(10, 2))
+    # cost_estimate removed
     notes = db.Column(db.Text)
     
     # Signature - stored as base64
-    client_signature = db.Column(db.Text)
+    # client_signature removed
     signature_timestamp = db.Column(db.DateTime)
     
     # Metadata
@@ -41,33 +41,25 @@ class JobCard(db.Model):
     
     def to_dict(self, include_images=False):
         """Convert model to dictionary"""
-        # Query the actual count of images from the database
         images_count = db.session.query(db.func.count(InvoiceImage.id)).filter(InvoiceImage.jobcard_id == self.id).scalar()
-        
         data = {
             'id': self.id,
             'job_title': self.job_title,
             'job_description': self.job_description,
             'client_name': self.client_name,
-            'client_email': self.client_email,
-            'client_phone': self.client_phone,
             'service_location': self.service_location,
             'technician_name': self.technician_name,
             'service_date': self.service_date.isoformat() if self.service_date else None,
             'labor_hours': float(self.labor_hours) if self.labor_hours else None,
             'materials_used': self.materials_used,
-            'cost_estimate': float(self.cost_estimate) if self.cost_estimate else None,
             'notes': self.notes,
-            'has_signature': bool(self.client_signature),
             'status': self.status,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
-            'images_count': images_count,  # Accurate count from database
+            'images_count': images_count,
         }
-        
         if include_images:
             data['images'] = [img.to_dict() for img in self.images]
-        
         return data
 
 

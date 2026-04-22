@@ -1,12 +1,13 @@
+
 from flask import request, jsonify, send_file
 from datetime import datetime
 from app.routes import api_bp
 from app.models import db, JobCard, InvoiceImage
-from app.utils.email_service import send_jobcard_confirmation
 from app.utils.pdf_service import generate_jobcard_pdf
 import os
 import tempfile
 import base64
+import threading
 from io import BytesIO
 from werkzeug.utils import secure_filename
 from flask_login import login_required, current_user
@@ -16,7 +17,6 @@ from PIL import Image, UnidentifiedImageError
 
 MAX_IMAGE_DIMENSION = 1600
 JPEG_QUALITY = 80
-
 
 def optimize_image_for_storage(file_storage):
     """Resize and recompress uploaded images to reduce DB storage footprint."""
@@ -63,7 +63,7 @@ def create_jobcard():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['job_title', 'client_name', 'client_email', 'service_location', 'technician_name', 'service_date']
+        required_fields = ['job_title', 'client_name', 'service_location', 'technician_name', 'service_date']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
@@ -73,41 +73,19 @@ def create_jobcard():
             job_title=data['job_title'],
             job_description=data.get('job_description'),
             client_name=data['client_name'],
-            client_email=data['client_email'],
-            client_phone=data.get('client_phone'),
             service_location=data['service_location'],
             technician_name=data['technician_name'],
             service_date=datetime.fromisoformat(data['service_date']).date(),
             labor_hours=data.get('labor_hours'),
             materials_used=data.get('materials_used'),
-            cost_estimate=data.get('cost_estimate'),
             notes=data.get('notes'),
-            client_signature=data.get('client_signature'),
-            signature_timestamp=datetime.utcnow() if data.get('client_signature') else None,
             created_by=(current_user.username if getattr(current_user, 'is_authenticated', False) else data.get('created_by', 'unknown'))
         )
         
         db.session.add(jobcard)
         db.session.commit()
         
-        # Generate PDF
-        temp_pdf_path = None
-        try:
-            temp_dir = tempfile.gettempdir()
-            temp_pdf_path = os.path.join(temp_dir, f'jobcard_{jobcard.id}.pdf')
-            generate_jobcard_pdf(jobcard, temp_pdf_path)
-            
-            # Send confirmation email
-            send_jobcard_confirmation(jobcard, temp_pdf_path)
-        except Exception as e:
-            print(f"Error generating PDF or sending email: {str(e)}")
-        finally:
-            # Clean up temp file
-            if temp_pdf_path and os.path.exists(temp_pdf_path):
-                try:
-                    os.remove(temp_pdf_path)
-                except:
-                    pass
+
         
         return jsonify({
             'message': 'Jobcard created successfully',
@@ -142,8 +120,8 @@ def get_jobcards():
         
         query = JobCard.query.order_by(JobCard.created_at.desc())
         results = query.all()
-        for jobcard in results:
-            pprint(jobcard.to_dict())
+        # for jobcard in results:
+        #     pprint(jobcard.to_dict())
 
         if status:
             query = query.filter_by(status=status)
@@ -175,7 +153,7 @@ def update_jobcard(jobcard_id):
         data = request.get_json()
         
         # Update allowed fields
-        allowed_fields = ['job_title', 'job_description', 'status', 'notes', 'labor_hours', 'cost_estimate']
+        allowed_fields = ['job_title', 'job_description', 'status', 'notes', 'labor_hours', 'materials_used']
         for field in allowed_fields:
             if field in data:
                 setattr(jobcard, field, data[field])
@@ -227,19 +205,29 @@ def upload_invoice_images(jobcard_id):
         files = request.files.getlist('files')
         if not files:
             return jsonify({'error': 'No files selected'}), 400
-        
+
+        # Get send_to_client flags from form (should be same length as files)
+        send_to_client_flags = request.form.getlist('send_to_client_flags')
+        # Convert to bool list (default to False if missing or invalid)
+        send_to_client_bools = [(flag == '1' or flag == 'true' or flag == 'True') for flag in send_to_client_flags]
+        # Pad/truncate to match files length
+        while len(send_to_client_bools) < len(files):
+            send_to_client_bools.append(False)
+        if len(send_to_client_bools) > len(files):
+            send_to_client_bools = send_to_client_bools[:len(files)]
+
         uploaded_images = []
         total_original_size = 0
         total_stored_size = 0
-        
-        for file in files:
+
+        for idx, file in enumerate(files):
             if file.filename == '':
                 continue
-            
+
             # Validate file is an image
             if not file.content_type.startswith('image/'):
                 return jsonify({'error': f'File {file.filename} is not an image'}), 400
-            
+
             # Re-encode image to reduce storage footprint before persisting.
             file.seek(0)
             original_bytes = file.read()
@@ -247,24 +235,56 @@ def upload_invoice_images(jobcard_id):
             image_data = base64.b64encode(optimized_bytes).decode('utf-8')
             total_original_size += len(original_bytes)
             total_stored_size += len(optimized_bytes)
-            
+
+            # Set send_to_client from flags
+            send_to_client = send_to_client_bools[idx] if idx < len(send_to_client_bools) else False
+
             # Create invoice image record
             invoice_image = InvoiceImage(
                 jobcard_id=jobcard_id,
                 image_data=image_data,
                 filename=secure_filename(file.filename),
-                send_to_client=False
+                send_to_client=send_to_client
             )
-            
+
             db.session.add(invoice_image)
             uploaded_images.append(invoice_image)
-        
+
         db.session.commit()
 
         reduction_percent = 0
         if total_original_size > 0:
             reduction_percent = round((1 - (total_stored_size / total_original_size)) * 100, 2)
-        
+
+        # --- Automatic email after first image upload for this jobcard ---
+        # Only send if this is the first upload (i.e., total images now == just uploaded)
+        from app.utils.email_service import send_jobcard_confirmation
+        jobcard = JobCard.query.get(jobcard_id)
+        existing_images = InvoiceImage.query.filter_by(jobcard_id=jobcard_id).count()
+        if existing_images == len(uploaded_images):
+            from flask import current_app
+            app = current_app._get_current_object()
+            jobcard_id_bg = jobcard.id
+
+            def send_email_background(app, jobcard_id_bg):
+                with app.app_context():
+                    try:
+                        jc = JobCard.query.get(jobcard_id_bg)
+                        temp_dir = tempfile.gettempdir()
+                        temp_pdf_path = os.path.join(temp_dir, f'jobcard_{jc.id}.pdf')
+                        generate_jobcard_pdf(jc, temp_pdf_path)
+                        send_jobcard_confirmation(jc, temp_pdf_path, force_to=os.environ.get('JOBCARD_EMAIL'))
+                    except Exception as e:
+                        print(f"Background email error: {str(e)}")
+                    finally:
+                        if temp_pdf_path and os.path.exists(temp_pdf_path):
+                            try:
+                                os.remove(temp_pdf_path)
+                            except:
+                                pass
+
+            threading.Thread(target=send_email_background, args=(app, jobcard_id_bg), daemon=True).start()
+
         return jsonify({
             'message': f'{len(uploaded_images)} image(s) uploaded successfully',
             'original_bytes': total_original_size,
@@ -340,45 +360,44 @@ def delete_image(image_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/jobcards/<int:jobcard_id>/send-to-client', methods=['POST'])
-@login_required
-def send_jobcard_to_client(jobcard_id):
-    """Send jobcard confirmation email with selected images to client"""
-    try:
-        jobcard = JobCard.query.get(jobcard_id)
-        if not jobcard:
-            return jsonify({'error': 'Jobcard not found'}), 404
-        
-        if not jobcard.client_email:
-            return jsonify({'error': 'Client email address not found'}), 400
-        
-        # Generate PDF temporarily
-        temp_pdf_path = None
-        try:
-            temp_dir = tempfile.gettempdir()
-            temp_pdf_path = os.path.join(temp_dir, f'jobcard_{jobcard.id}.pdf')
-            generate_jobcard_pdf(jobcard, temp_pdf_path)
-            
-            # Send confirmation email
-            send_jobcard_confirmation(jobcard, temp_pdf_path)
-            
-            return jsonify({
-                'message': f'Jobcard sent to {jobcard.client_email} successfully'
-            }), 200
-        except Exception as e:
-            return jsonify({'error': f'Failed to send email: {str(e)}'}), 500
-        finally:
-            # Clean up temp file
-            if temp_pdf_path and os.path.exists(temp_pdf_path):
-                try:
-                    os.remove(temp_pdf_path)
-                except:
-                    pass
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @api_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     
     return jsonify({'status': 'ok'}), 200
+
+
+@api_bp.route('/jobcards/<int:jobcard_id>/send-to-client', methods=['POST'])
+@login_required
+def send_jobcard_to_client(jobcard_id):
+    """Manually trigger sending the jobcard email with PDF and images (async)"""
+    from app.utils.email_service import send_jobcard_confirmation
+    from flask import current_app
+
+    jobcard = JobCard.query.get(jobcard_id)
+    if not jobcard:
+        return jsonify({'error': 'Jobcard not found'}), 404
+
+    app = current_app._get_current_object()
+    jc_id = jobcard.id
+
+    def send_email_background(app, jc_id):
+        with app.app_context():
+            temp_pdf_path = None
+            try:
+                jc = JobCard.query.get(jc_id)
+                temp_dir = tempfile.gettempdir()
+                temp_pdf_path = os.path.join(temp_dir, f'jobcard_{jc.id}.pdf')
+                generate_jobcard_pdf(jc, temp_pdf_path)
+                send_jobcard_confirmation(jc, temp_pdf_path, force_to=os.environ.get('JOBCARD_EMAIL'))
+            except Exception as e:
+                print(f"Background manual email error: {str(e)}")
+            finally:
+                if temp_pdf_path and os.path.exists(temp_pdf_path):
+                    try:
+                        os.remove(temp_pdf_path)
+                    except:
+                        pass
+
+    threading.Thread(target=send_email_background, args=(app, jc_id), daemon=True).start()
+    return jsonify({'message': 'Email is being sent to client'}), 200

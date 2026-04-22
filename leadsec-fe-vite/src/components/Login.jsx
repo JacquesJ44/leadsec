@@ -45,12 +45,12 @@ function Login() {
       <form onSubmit={handleSubmit} className="jobcard-form">
         <div className="form-group">
           <label>Username</label>
-          <input value={username} onChange={e => setUsername(e.target.value)} required />
+          <input type='text' autoComplete='username' value={username} onChange={e => setUsername(e.target.value)} required />
         </div>
 
         <div className="form-group">
           <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <input type="password" autoComplete='current-password' value={password} onChange={e => setPassword(e.target.value)} required />
         </div>
 
         <div className="form-actions">

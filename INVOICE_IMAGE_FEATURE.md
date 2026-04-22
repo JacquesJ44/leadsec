@@ -39,7 +39,7 @@ GET /api/jobcards/{jobcard_id}/images
 ```
 PUT /api/images/{image_id}
 - Update the `send_to_client` flag for an image
-- Controls which images are included in client communications
+- Controls which images are included in the email report
 ```
 
 #### Delete Image
@@ -79,10 +79,10 @@ DELETE /api/images/{image_id}
 2. Scroll to "Supplier Invoice & Reference Images" section
 3. Click to select multiple image files
 4. See preview of selected images
-5. Submit jobcard (images upload automatically)
-6. View uploaded images with checkboxes
-7. Check boxes for images to include in client email
-8. Click "Save Image Preferences" to finalize choices
+5. Check **"Include in email report"** for images to attach to the email
+6. Submit jobcard — you are redirected to the jobcards list immediately
+7. PDF generation and email dispatch happen in the background
+8. Return to the detail page at any time to manage images or resend the email
 
 ### 6. Frontend Styling (`leadsec-fe-vite/src/components/JobCardForm.css`)
 Added comprehensive styles for:
@@ -161,36 +161,35 @@ After a jobcard is created, users can manage which images are sent to clients. T
 ### How It Works
 
 1. **Image Selection During Form Submission**
-   - When creating a jobcard, user can mark images "Send to client"
-   - Selected images are automatically emailed when jobcard is submitted
+   - When creating a jobcard, mark images "Include in email report"
+   - After image upload completes, a PDF is generated and emailed in a background thread
    
 2. **Resending Later**
    - Users can return to the JobCard Detail page anytime
    - Check/uncheck images to control what gets sent
-   - Click **✉️ Send to Client** button
-   - Email is sent with updated image selection
+   - Click **✉️ Send Email to Client** button
+   - Response is immediate; email is sent in a background thread
+   - Inline confirmation **"✅ Email queued — it will arrive shortly."** appears next to the button
 
 3. **Email Contents**
    - Full jobcard details
    - PDF attachment with embedded images
-   - Image count notification
    - All images marked with `send_to_client=true` included
 
 ### New API Endpoint
 
 **POST** `/api/jobcards/<jobcard_id>/send-to-client`
-- Generates PDF with selected images
-- Sends email to client
-- Returns confirmation message
+- Immediately returns `200` with `{ "message": "Email is being sent to client" }`
+- PDF generation and email dispatch run in a background thread
 - Requires authentication
 
 ### Frontend Implementation
 
 **Button Location**: JobCardDetail component header
 - Available after jobcard is created
-- Shows **✉️ Send to Client** button
-- Shows loading state during processing
-- Shows success/error messages
+- Shows **✉️ Send Email to Client** button
+- Shows loading state (`Sending...`) during request
+- Shows inline **"✅ Email queued — it will arrive shortly."** on success (visible for 6 seconds)
 
 ## Testing Checklist
 

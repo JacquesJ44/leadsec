@@ -78,15 +78,15 @@ This guide explains how to use the JobCard system while on-site with clients.
 ### 5. Upload Invoice/Reference Images (Optional)
 1. **Select Photos** - Click the file input to select one or more invoice or reference photos
 2. **Image Preview** - Selected images will display as thumbnails
-3. **Mark for Client** - Check the "Send to client" checkbox for any images you want included in the email
+3. **Mark for Email Report** - Check the "Include in email report" checkbox for any images you want attached to the email
 4. **Delete if Needed** - Click the delete button to remove any image before submitting
 5. **Submit Jobcard** - Images will automatically upload when you submit the jobcard
 
 ### 6. Submit
 - Click **Submit JobCard** button
-- Wait for confirmation message
-- A PDF copy will be automatically created and emailed to the client
-- The email will include only the images you marked "Send to client"
+- You will be redirected to the JobCards list on success
+- A PDF and email are automatically sent in the background after image upload
+- The email will include only the images you marked "Include in email report"
 
 ---
 
@@ -96,16 +96,16 @@ This guide explains how to use the JobCard system while on-site with clients.
 1. Navigate to **JobCards** list
 2. Click **View** on any jobcard to see full details
 3. On the detail page you can:
-   - Edit job information
-   - Manage images (check/uncheck "Send to client" flag)
+   - Edit job information (including Materials Used)
+   - Manage images (check/uncheck "Include in email report" flag)
    - Download PDF
-   - **Send to Client** - Click this button to resend the jobcard email with currently selected images
+   - **✉️ Send Email to Client** - Click this button to send the jobcard email with currently selected images
 
-### Send to Client
-- After you've selected which images to send, click the **✉️ Send to Client** button
-- The jobcard PDF will be generated with the selected images
-- An email will be sent to the client with the PDF attachment
-- This is useful if you want to update which images are included
+### Send Email to Client
+- After you've selected which images to include, click the **✉️ Send Email to Client** button
+- The response is immediate — the email is sent in the background
+- A confirmation message **"✅ Email queued — it will arrive shortly."** will appear next to the button
+- This is useful if you want to resend or update which images are included
 
 ---
 
@@ -128,7 +128,7 @@ This guide explains how to use the JobCard system while on-site with clients.
              ↓
 ┌─────────────────────────┐
 │ Enter Client Info       │
-│ (Name, Email, Phone)    │
+│ (Name, Email)           │
 └────────────┬────────────┘
              ↓
 ┌─────────────────────────┐
@@ -137,19 +137,20 @@ This guide explains how to use the JobCard system while on-site with clients.
 └────────────┬────────────┘
              ↓
 ┌─────────────────────────┐
-│ Client Signs Form       │
-│ (Signature Pad)         │
+│ Upload Invoice Images   │
+│ (Mark for email report) │
 └────────────┬────────────┘
              ↓
 ┌─────────────────────────┐
 │ Review & Submit         │
 └────────────┬────────────┴───┐
              ↓                 ↓
-    ✅ Success          ⚠️ Fix Errors
+    ✅ Redirected         ⚠️ Fix Errors
+    to JobCards list
              ↓
 ┌─────────────────────────┐
-│ PDF Generated & Emailed │
-│ to Client               │
+│ PDF & Email sent in     │
+│ background (async)      │
 └─────────────────────────┘
 ```
 
@@ -169,17 +170,11 @@ Before submitting, ensure you have:
 ### Client Details
 - [ ] Client's full name
 - [ ] Client's email address
-- [ ] Client's phone (optional)
 
 ### Service Documentation
 - [ ] Technician/your name
 - [ ] Materials list
-- [ ] Cost estimate
 - [ ] Any special notes
-
-### Signature
-- [ ] Client has signed the form
-- [ ] Signature is clear and visible
 
 ---
 
@@ -209,13 +204,13 @@ Before submitting, ensure you have:
 
 ## 📄 What Happens After Submission
 
-1. **PDF Generated** (within seconds)
-   - Professional document created with all form data and signature
+1. **PDF Generated** (in background after image upload)
+   - Professional document created with all form data
    - Includes company logo and jobcard ID
 
-2. **Email Sent to Client** (immediately)
+2. **Email Sent** (in background, a few seconds after submission)
    - PDF attached as confirmation
-   - Client receives receipt of completed work
+   - Includes only images marked "Include in email report"
    - Email includes jobcard reference number
 
 3. **Data Stored** (immediately)
@@ -223,9 +218,9 @@ Before submitting, ensure you have:
    - Accessible to office staff for processing
    - Can be tracked and updated
 
-4. **Confirmation Message**
-   - You'll see success message with jobcard ID
-   - Keep this ID for reference if needed
+4. **Redirect to JobCards List**
+   - After successful submission you are taken straight to the jobcards list
+   - Open any jobcard to view, edit, manage images, or resend the email
 
 ---
 

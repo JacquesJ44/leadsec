@@ -122,16 +122,19 @@ The frontend will run on `http://localhost:5173`
 ### Image Management
 - ✅ Multiple invoice/reference photo upload
 - ✅ Image preview and selection
-- ✅ Mark images to send to client
-- ✅ Images embedded in PDF with client email
+- ✅ Mark images to include in email report
+- ✅ Images embedded in PDF with email
 - ✅ Delete/manage images after upload
+- ✅ Automatic image optimisation/compression on upload
 
 ### Processing & Communication
 - ✅ Form validation
 - ✅ PDF generation with ReportLab
-- ✅ Automatic email to client on jobcard creation
-- ✅ Manual "Send to Client" button for re-sending
+- ✅ Automatic background email after first image upload
+- ✅ Manual "✉️ Send Email to Client" button (async, instant response)
+- ✅ Inline email-queued confirmation in UI
 - ✅ Selective image inclusion in emails
+- ✅ Materials Used editable after jobcard creation
 - ✅ Data storage in MySQL
 - ✅ Status tracking (pending/approved/completed)
 
@@ -153,7 +156,7 @@ The frontend will run on `http://localhost:5173`
 | GET | `/api/jobcards/<id>` | Get specific jobcard |
 | PUT | `/api/jobcards/<id>` | Update jobcard |
 | GET | `/api/jobcards/<id>/pdf` | Download PDF |
-| POST | `/api/jobcards/<id>/send-to-client` | Send to client (resend) |
+| POST | `/api/jobcards/<id>/send-to-client` | Send email (async background) |
 
 ### Image Management Endpoints (all require authentication)
 | Method | Endpoint | Description |

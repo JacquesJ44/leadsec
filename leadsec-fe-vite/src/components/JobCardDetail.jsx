@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
@@ -5,6 +6,23 @@ import { jobcardAPI } from '../utils/api'
 import './JobCardDetail.css'
 
 function JobCardDetail() {
+    const [sendingEmail, setSendingEmail] = useState(false)
+    const [emailQueued, setEmailQueued] = useState(false)
+
+    const handleSendEmail = async () => {
+      setSendingEmail(true)
+      setEmailQueued(false)
+      setError('')
+      try {
+        await jobcardAPI.sendToClient(id)
+        setEmailQueued(true)
+        setTimeout(() => setEmailQueued(false), 6000)
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error sending email to client')
+      } finally {
+        setSendingEmail(false)
+      }
+    }
   const { id } = useParams()
   const navigate = useNavigate()
   const auth = useAuth()
@@ -60,7 +78,7 @@ function JobCardDetail() {
         status: updatedData.status,
         notes: updatedData.notes,
         labor_hours: updatedData.labor_hours ? parseFloat(updatedData.labor_hours) : null,
-        cost_estimate: updatedData.cost_estimate ? parseFloat(updatedData.cost_estimate) : null
+        materials_used: updatedData.materials_used
       }
 
       await jobcardAPI.updateJobcard(id, updatePayload)
@@ -151,19 +169,6 @@ function JobCardDetail() {
     }
   }
 
-  const handleSendToClient = async () => {
-    try {
-      setError('')
-      setLoading(true)
-      await jobcardAPI.sendToClient(id)
-      setSuccessMessage(`Jobcard sent to ${jobcard.client_email}!`)
-      setTimeout(() => setSuccessMessage(''), 3000)
-    } catch (err) {
-      setError(err.response?.data?.error || 'Error sending jobcard to client')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return <div className="loading-container">Loading jobcard...</div>
@@ -214,9 +219,19 @@ function JobCardDetail() {
             <button className="btn btn-info" onClick={handleDownloadPDF}>
               📥 Download PDF
             </button>
-            <button className="btn btn-success" onClick={handleSendToClient}>
-              ✉️ Send to Client
+            <button
+              className="btn btn-success"
+              onClick={handleSendEmail}
+              disabled={sendingEmail}
+              style={{ marginLeft: '8px' }}
+            >
+              {sendingEmail ? 'Sending...' : '✉️ Send to Inbox'}
             </button>
+            {emailQueued && (
+              <span style={{ marginLeft: '10px', color: '#2e7d32', fontWeight: 500 }}>
+                ✅ Email queued — it will arrive shortly.
+              </span>
+            )}
             {!editing && (
               <button className="btn btn-primary" onClick={() => setEditing(true)}>
                 ✏️ Edit
@@ -225,6 +240,8 @@ function JobCardDetail() {
           </div>
         </div>
       </div>
+      
+      {error && <div className="alert alert-error">{error}</div>}
 
       <div className="detail-content">
         {/* Job Information */}
@@ -271,10 +288,10 @@ function JobCardDetail() {
                   value={updatedData.job_description || ''}
                   onChange={handleInputChange}
                   className="textarea textarea-bordered"
-                  rows="3"
+                  rows="6"
                 />
               ) : (
-                <p>{jobcard.job_description || 'N/A'}</p>
+                <p style={{ whiteSpace: 'pre-line' }}>{jobcard.job_description || 'N/A'}</p>
               )}
             </div>
 
@@ -300,19 +317,7 @@ function JobCardDetail() {
             </div>
 
             <div className="info-item">
-              <label>Cost Estimate</label>
-              {editing ? (
-                <input
-                  type="number"
-                  name="cost_estimate"
-                  value={updatedData.cost_estimate || ''}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  step="0.01"
-                />
-              ) : (
-                <p>${jobcard.cost_estimate || 'N/A'}</p>
-              )}
+              {/* Removed cost_estimate field */}
             </div>
           </div>
 
@@ -324,10 +329,10 @@ function JobCardDetail() {
                 value={updatedData.notes || ''}
                 onChange={handleInputChange}
                 className="textarea textarea-bordered"
-                rows="3"
+                rows="6"
               />
             ) : (
-              <p>{jobcard.notes || 'No notes'}</p>
+              <p style={{ whiteSpace: 'pre-line' }}>{jobcard.notes || 'No notes'}</p>
             )}
           </div>
         </section>
@@ -341,15 +346,8 @@ function JobCardDetail() {
               <p>{jobcard.client_name}</p>
             </div>
 
-            <div className="info-item">
-              <label>Client Email</label>
-              <p>{jobcard.client_email}</p>
-            </div>
-
-            <div className="info-item">
-              <label>Client Phone</label>
-              <p>{jobcard.client_phone || 'N/A'}</p>
-            </div>
+            {/* <div className="info-item"> */}
+              {/* Removed client_email and client_phone fields */}
 
             <div className="info-item full-width">
               <label>Service Location</label>
@@ -369,7 +367,17 @@ function JobCardDetail() {
 
             <div className="info-item">
               <label>Materials Used</label>
-              <p>{jobcard.materials_used || 'N/A'}</p>
+              {editing ? (
+                <textarea
+                  name="materials_used"
+                  value={updatedData.materials_used || ''}
+                  onChange={handleInputChange}
+                  className="textarea textarea-bordered"
+                  rows="6"
+                />
+              ) : (
+                <p style={{ whiteSpace: 'pre-line' }}>{jobcard.materials_used || 'N/A'}</p>
+              )}
             </div>
           </div>
         </section>
@@ -393,7 +401,7 @@ function JobCardDetail() {
                           checked={image.send_to_client}
                           onChange={() => handleToggleSendToClient(image)}
                         />
-                        <span>Send to client</span>
+                        <span>Include in email report</span>
                       </label>
                     </div>
                     <button
@@ -415,6 +423,7 @@ function JobCardDetail() {
                 type="file"
                 multiple
                 accept="image/*"
+                capture="environment"
                 onChange={handleFileSelect}
                 className="file-input file-input-bordered"
               />
@@ -448,7 +457,6 @@ function JobCardDetail() {
           </div>
         </section>
         
-        {error && <div className="alert alert-error">{error}</div>}
         {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
         {/* Action Buttons */}

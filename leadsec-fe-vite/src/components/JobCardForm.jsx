@@ -12,21 +12,19 @@ function JobCardForm() {
     job_title: '',
     job_description: '',
     client_name: '',
-    client_email: '',
-    client_phone: '',
     service_location: '',
     technician_name: '',
     service_date: '',
     labor_hours: '',
     materials_used: '',
-    cost_estimate: '',
     notes: ''
   })
 
-  const [signature, setSignature] = useState(null)
+  // Signature field removed
   const [loading, setLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  // Each selectedFile: { file: File, sendToClient: boolean }
   const [selectedFiles, setSelectedFiles] = useState([])
   const [uploadedImages, setUploadedImages] = useState([])
   const [jobcardId, setJobcardId] = useState(null)
@@ -40,22 +38,30 @@ function JobCardForm() {
   }
 
   const handleSignatureCapture = (signatureData) => {
-    setSignature(signatureData)
+    // Signature field removed
   }
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
     const validFiles = files.filter(file => file.type.startsWith('image/'))
-    
     if (files.length !== validFiles.length) {
       setErrorMessage('Some files are not images. Only image files are allowed.')
     }
-    
-    setSelectedFiles(prev => [...prev, ...validFiles])
+    // Add sendToClient flag defaulting to false
+    const filesWithFlag = validFiles.map(file => ({ file, sendToClient: false }))
+    setSelectedFiles(prev => [...prev, ...filesWithFlag])
   }
 
   const removeSelectedFile = (index) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const toggleSelectedFileSendToClient = (index) => {
+    setSelectedFiles(prev =>
+      prev.map((item, i) =>
+        i === index ? { ...item, sendToClient: !item.sendToClient } : item
+      )
+    )
   }
 
   const removeUploadedImage = (imageId) => {
@@ -76,10 +82,11 @@ function JobCardForm() {
     try {
       setLoading(true)
       const formDataToSend = new FormData()
-      selectedFiles.forEach(file => {
+      selectedFiles.forEach(({ file, sendToClient }, idx) => {
         formDataToSend.append('files', file)
+        formDataToSend.append('send_to_client_flags', sendToClient ? '1' : '0')
       })
-
+      // The backend should expect 'send_to_client_flags' as an array matching files order
       const response = await jobcardAPI.uploadImages(jcardId, formDataToSend)
       setUploadedImages(response.data.images)
       setSelectedFiles([])
@@ -116,14 +123,8 @@ function JobCardForm() {
     setSuccessMessage('')
 
     // Validate required fields
-    if (!formData.job_title || !formData.client_name || !formData.client_email || 
-        !formData.service_location || !formData.technician_name || !formData.service_date) {
+    if (!formData.job_title || !formData.client_name || !formData.service_location || !formData.technician_name || !formData.service_date) {
       setErrorMessage('Please fill in all required fields')
-      return
-    }
-
-    if (!signature) {
-      setErrorMessage('Client signature is required')
       return
     }
 
@@ -132,9 +133,7 @@ function JobCardForm() {
     try {
       const submitData = {
         ...formData,
-        client_signature: signature,
-        labor_hours: formData.labor_hours ? parseFloat(formData.labor_hours) : null,
-        cost_estimate: formData.cost_estimate ? parseFloat(formData.cost_estimate) : null
+        labor_hours: formData.labor_hours ? parseFloat(formData.labor_hours) : null
       }
 
       const response = await jobcardAPI.createJobcard(submitData)
@@ -153,23 +152,19 @@ function JobCardForm() {
         job_title: '',
         job_description: '',
         client_name: '',
-        client_email: '',
-        client_phone: '',
         service_location: '',
         technician_name: '',
         service_date: '',
         labor_hours: '',
         materials_used: '',
-        cost_estimate: '',
         notes: ''
       })
-      setSignature(null)
       setSelectedFiles([])
       setUploadedImages([])
 
-      // Navigate to jobcard detail after 2 seconds
+      // Navigate to jobcards list after 2 seconds
       setTimeout(() => {
-        navigate(`/jobcard/${newJobcardId}`)
+        navigate('/jobcards')
       }, 2000)
     } catch (error) {
       console.error('Error submitting jobcard:', error)
@@ -193,7 +188,7 @@ function JobCardForm() {
       <div className="form-header">
         <div>
           <h1>JobCard Form</h1>
-          <p>Complete this form on-site and have it signed by the client</p>
+          <p>Complete this form on-site and submit it</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {auth.user && (
@@ -314,40 +309,12 @@ function JobCardForm() {
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="client_email">
-                Client Email <span className="required">*</span>
-              </label>
-              <input
-                type="email"
-                id="client_email"
-                name="client_email"
-                value={formData.client_email}
-                onChange={handleInputChange}
-                placeholder="client@example.com"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="client_phone">Client Phone</label>
-              <input
-                type="tel"
-                id="client_phone"
-                name="client_phone"
-                value={formData.client_phone}
-                onChange={handleInputChange}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-          </div>
+          {/* Removed client_email and client_phone fields */}
         </fieldset>
 
         {/* Service Details Section */}
         <fieldset className="form-section">
           <legend>Service Details</legend>
-          
           <div className="form-group">
             <label htmlFor="technician_name">
               Technician Name <span className="required">*</span>
@@ -362,10 +329,9 @@ function JobCardForm() {
               required
             />
           </div>
-
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="materials_used">Materials Used</label>
+              <label htmlFor="materials_used">Materials Used <span className="required">*</span> </label>
               <textarea
                 id="materials_used"
                 name="materials_used"
@@ -376,21 +342,7 @@ function JobCardForm() {
                 required
               />
             </div>
-
-            <div className="form-group">
-              <label htmlFor="cost_estimate">Cost Estimate</label>
-              <input
-                type="number"
-                id="cost_estimate"
-                name="cost_estimate"
-                value={formData.cost_estimate}
-                onChange={handleInputChange}
-                placeholder="0.00"
-                step="0.01"
-              />
-            </div>
           </div>
-
           <div className="form-group">
             <label htmlFor="notes">Additional Notes</label>
             <textarea
@@ -407,7 +359,7 @@ function JobCardForm() {
         {/* Invoice Images Section */}
         <fieldset className="form-section">
           <legend>Supplier Invoice & Reference Images</legend>
-          <p className="form-section-hint">Upload photos of supplier invoices or other reference documents. You can choose which images to send to the client.</p>
+          <p className="form-section-hint">Upload photos of supplier invoices or other reference documents. You can choose which images to include in the email report.</p>
           
           <div className="form-group">
             <label htmlFor="invoice_images">
@@ -418,6 +370,7 @@ function JobCardForm() {
               id="invoice_images"
               multiple
               accept="image/*"
+              capture="environment"
               onChange={handleFileSelect}
               className="file-input"
             />
@@ -428,10 +381,18 @@ function JobCardForm() {
             <div className="images-section">
               <h4>Selected Images for Upload ({selectedFiles.length})</h4>
               <div className="image-grid">
-                {selectedFiles.map((file, index) => (
+                {selectedFiles.map((item, index) => (
                   <div key={index} className="image-preview-item selected">
-                    <img src={URL.createObjectURL(file)} alt={`Selected ${index + 1}`} />
-                    <p className="image-filename">{file.name}</p>
+                    <img src={URL.createObjectURL(item.file)} alt={`Selected ${index + 1}`} />
+                    <p className="image-filename">{item.file.name}</p>
+                    <label className="image-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={item.sendToClient}
+                        onChange={() => toggleSelectedFileSendToClient(index)}
+                      />
+                      <span>Include in email report</span>
+                    </label>
                     <button
                       type="button"
                       className="btn btn-small btn-danger"
@@ -460,7 +421,7 @@ function JobCardForm() {
                         checked={image.send_to_client}
                         onChange={() => toggleImageSendToClient(image.id)}
                       />
-                      <span>Send to client</span>
+                      <span>Include in email report</span>
                     </label>
                     <button
                       type="button"
@@ -485,14 +446,7 @@ function JobCardForm() {
           )}
         </fieldset>
 
-        {/* Signature Section */}
-        <SignaturePad onSignatureCapture={handleSignatureCapture} />
-
-        {signature && (
-          <div className="signature-preview">
-            <p className="signature-status">✓ Signature captured</p>
-          </div>
-        )}
+        {/* SignaturePad removed */}
 
         {successMessage && <div className="alert alert-success">{successMessage}</div>}
         {errorMessage && <div className="alert alert-error">{errorMessage}</div>}
@@ -507,17 +461,13 @@ function JobCardForm() {
                 job_title: '',
                 job_description: '',
                 client_name: '',
-                client_email: '',
-                client_phone: '',
                 service_location: '',
                 technician_name: '',
                 service_date: '',
                 labor_hours: '',
                 materials_used: '',
-                cost_estimate: '',
                 notes: ''
               })
-              setSignature(null)
               setSelectedFiles([])
               setUploadedImages([])
             }}

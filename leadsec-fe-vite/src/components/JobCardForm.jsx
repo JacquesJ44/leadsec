@@ -117,6 +117,21 @@ function JobCardForm() {
     }
   }
 
+  const handleFileChange = (e) => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  const newFiles = files.map(file => ({
+    file,
+    sendToClient: false
+  }));
+
+  setSelectedFiles(prev => [...prev, ...newFiles]);
+
+  // Important: reset input so same file can be selected again
+  e.target.value = null;
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMessage('')
@@ -365,15 +380,40 @@ function JobCardForm() {
             <label htmlFor="invoice_images">
               Select Images
             </label>
-            <input
-              type="file"
-              id="invoice_images"
-              multiple
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileSelect}
-              className="file-input"
-            />
+            <div className="image-upload-btn-group">
+              {/* Take Photo */}
+              <input 
+                type="file" 
+                accept="image/*" 
+                capture="environment"
+                id="cameraInput"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <button 
+                type="button" 
+                className="btn btn-secondary image-upload-btn"
+                onClick={() => document.getElementById('cameraInput').click()}
+              >
+                <span role="img" aria-label="camera">📷</span> Take Photo
+              </button>
+
+              {/* Choose from Gallery */}
+              <input 
+                type="file" 
+                accept="image/*"
+                id="fileInput"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+              <button 
+                type="button" 
+                className="btn btn-secondary image-upload-btn"
+                onClick={() => document.getElementById('fileInput').click()}
+              >
+                <span role="img" aria-label="gallery">🖼️</span> Upload from Gallery
+              </button>
+            </div>
             <p className="form-help-text">You can select multiple image files at once</p>
           </div>
 

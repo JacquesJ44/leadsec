@@ -285,12 +285,15 @@ def upload_invoice_images(jobcard_id):
 
             threading.Thread(target=send_email_background, args=(app, jobcard_id_bg), daemon=True).start()
 
+        # Return all images for the jobcard, not just newly uploaded ones
+        all_images = InvoiceImage.query.filter_by(jobcard_id=jobcard_id).all()
+
         return jsonify({
             'message': f'{len(uploaded_images)} image(s) uploaded successfully',
             'original_bytes': total_original_size,
             'stored_bytes': total_stored_size,
             'storage_reduction_percent': reduction_percent,
-            'images': [img.to_dict() for img in uploaded_images]
+            'images': [img.to_dict() for img in all_images]
         }), 201
         
     except Exception as e:

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import useAuth from '../hooks/useAuth'
 import { jobcardAPI } from '../utils/api'
@@ -34,6 +34,9 @@ function JobCardDetail() {
   const [updatedData, setUpdatedData] = useState({})
   const [uploadedImages, setUploadedImages] = useState([])
   const [selectedFiles, setSelectedFiles] = useState([])
+  // Refs for file inputs
+  const cameraInputRef = useRef(null)
+  const galleryInputRef = useRef(null)
 
   useEffect(() => {
     fetchJobcard()
@@ -96,10 +99,16 @@ function JobCardDetail() {
     setEditing(false)
   }
 
+
+  // Consistent file select logic with sendToClient flag
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
+    if (!files.length) return
     const validFiles = files.filter(file => file.type.startsWith('image/'))
-    setSelectedFiles(prev => [...prev, ...validFiles])
+    const filesWithFlag = validFiles.map(file => ({ file, sendToClient: false }))
+    setSelectedFiles(prev => [...prev, ...filesWithFlag])
+    // Reset input so same file can be selected again
+    e.target.value = null
   }
 
   const removeSelectedFile = (index) => {
@@ -112,13 +121,14 @@ function JobCardDetail() {
     try {
       setError('')
       const formData = new FormData()
-      selectedFiles.forEach(file => {
+      selectedFiles.forEach(({ file, sendToClient }) => {
         formData.append('files', file)
+        formData.append('send_to_client_flags', sendToClient ? '1' : '0')
       })
-
-      const response = await jobcardAPI.uploadImages(id, formData)
-      setUploadedImages(response.data.images)
+      await jobcardAPI.uploadImages(id, formData)
       setSelectedFiles([])
+      // Reload jobcard from backend to ensure all images are shown accurately
+      await fetchJobcard()
       setSuccessMessage('Images uploaded successfully!')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err) {
@@ -419,23 +429,52 @@ function JobCardDetail() {
           <div className="upload-section">
             <h3>Add New Images</h3>
             <div className="form-group">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileSelect}
-                className="file-input file-input-bordered"
-              />
+              <div className="image-upload-btn-group">
+                {/* Take Photo */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  id="cameraInputDetail"
+                  ref={cameraInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileSelect}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary image-upload-btn"
+                  onClick={() => cameraInputRef.current && cameraInputRef.current.click()}
+                >
+                  <span role="img" aria-label="camera">📷</span> Take Photo
+                </button>
+
+                {/* Choose from Gallery */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="fileInputDetail"
+                  ref={galleryInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileSelect}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary image-upload-btn"
+                  onClick={() => galleryInputRef.current && galleryInputRef.current.click()}
+                >
+                  <span role="img" aria-label="gallery">🖼️</span> Upload from Gallery
+                </button>
+              </div>
+              <p className="form-help-text">You can select multiple image files at once</p>
             </div>
 
             {selectedFiles.length > 0 && (
               <div className="selected-files">
                 <h4>Files to Upload ({selectedFiles.length})</h4>
                 <div className="file-list">
-                  {selectedFiles.map((file, index) => (
+                  {selectedFiles.map((item, index) => (
                     <div key={index} className="file-item">
-                      <span>{file.name}</span>
+                      <span>{item.file.name}</span>
                       <button
                         type="button"
                         className="btn btn-sm btn-ghost"

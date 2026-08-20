@@ -159,6 +159,13 @@ function JobCardForm() {
       if (selectedFiles.length > 0) {
         await uploadImages(newJobcardId)
       }
+
+      // Notify JOBCARD_EMAIL recipient now that the jobcard (and any images) exist
+      try {
+        await jobcardAPI.sendToClient(newJobcardId)
+      } catch (emailError) {
+        console.error('Error sending jobcard notification email:', emailError.response?.data || emailError.message)
+      }
       
       setSuccessMessage(`JobCard #${newJobcardId} submitted successfully!`)
       

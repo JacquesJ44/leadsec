@@ -256,34 +256,9 @@ def upload_invoice_images(jobcard_id):
         if total_original_size > 0:
             reduction_percent = round((1 - (total_stored_size / total_original_size)) * 100, 2)
 
-        # --- Automatic email after first image upload for this jobcard ---
-        # Only send if this is the first upload (i.e., total images now == just uploaded)
-        from app.utils.email_service import send_jobcard_confirmation
-        jobcard = JobCard.query.get(jobcard_id)
-        existing_images = InvoiceImage.query.filter_by(jobcard_id=jobcard_id).count()
-        if existing_images == len(uploaded_images):
-            from flask import current_app
-            app = current_app._get_current_object()
-            jobcard_id_bg = jobcard.id
-
-            def send_email_background(app, jobcard_id_bg):
-                with app.app_context():
-                    try:
-                        jc = JobCard.query.get(jobcard_id_bg)
-                        temp_dir = tempfile.gettempdir()
-                        temp_pdf_path = os.path.join(temp_dir, f'jobcard_{jc.id}.pdf')
-                        generate_jobcard_pdf(jc, temp_pdf_path)
-                        send_jobcard_confirmation(jc, temp_pdf_path, force_to=os.environ.get('JOBCARD_EMAIL'))
-                    except Exception as e:
-                        print(f"Background email error: {str(e)}")
-                    finally:
-                        if temp_pdf_path and os.path.exists(temp_pdf_path):
-                            try:
-                                os.remove(temp_pdf_path)
-                            except:
-                                pass
-
-            threading.Thread(target=send_email_background, args=(app, jobcard_id_bg), daemon=True).start()
+        # Note: confirmation email is triggered explicitly via /send-to-client after
+        # the frontend finishes creating the jobcard and uploading any images, so it
+        # is not sent here to avoid duplicate emails.
 
         # Return all images for the jobcard, not just newly uploaded ones
         all_images = InvoiceImage.query.filter_by(jobcard_id=jobcard_id).all()
